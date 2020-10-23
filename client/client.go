@@ -252,6 +252,8 @@ func (c *client) tsLoop() {
 	var opts []opentracing.StartSpanOption
 	var stream pdpb.PD_TsoClient
 	var cancel context.CancelFunc
+	timer := time.NewTimer(0)
+	defer timer.Stop()
 
 	for {
 		var err error
@@ -293,10 +295,11 @@ func (c *client) tsLoop() {
 			}
 			done := make(chan struct{})
 			dl := deadline{
-				timer:  time.After(c.timeout),
+				timer:  timer.C,
 				done:   done,
 				cancel: cancel,
 			}
+			timer.Reset(c.timeout)
 			select {
 			case c.tsDeadlineCh <- dl:
 			case <-loopCtx.Done():
